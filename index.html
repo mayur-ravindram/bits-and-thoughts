@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Simple Blog</title>
+    <!-- Using Tailwind CSS and a custom style for the brutalist aesthetic -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Using a monospaced font for a stark, brutalist feel -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap">
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #000;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #222;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 0; /* Brutalist: no rounded corners */
+        }
+        /* Markdown content styling for brutalist theme */
+        .prose h1, .prose h2, .prose h3 {
+            color: #fff;
+            border-bottom: 2px solid #fff;
+            padding-bottom: 0.5rem;
+        }
+        .prose a {
+            color: #fff;
+            text-decoration: underline;
+        }
+        .prose a:hover {
+            color: #aaa;
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Main Container - Brutalist styling with sharp corners and high contrast -->
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl border-2 border-white">
+
+        <!-- Header Section -->
+        <header class="text-center mb-12 py-4">
+            <h1 id="site-title" class="text-4xl sm:text-5xl font-extrabold text-white mb-2">MY BLOG</h1>
+            <p class="text-lg text-gray-400">A space for my thoughts and ideas.</p>
+        </header>
+
+        <!-- Blog Posts List (Homepage) -->
+        <div id="blog-posts" class="space-y-0 border-t-2 border-b-2 border-white divide-y-2 divide-white">
+            <!-- Dynamic list of posts will be injected here by JavaScript -->
+        </div>
+
+        <!-- Single Blog Post Content -->
+        <div id="post-content" class="hidden">
+            <!-- Dynamic post content will be injected here -->
+        </div>
+
+    </div>
+
+    <!-- Scripting for Markdown and dynamic content loading -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const blogPostsContainer = document.getElementById('blog-posts');
+            const postContentContainer = document.getElementById('post-content');
+            
+            // Determine the base URL to handle project pages correctly.
+            // For a user page (username.github.io), this will be the root.
+            // For a project page (username.github.io/repo-name), it will include the repository name.
+            const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+            
+            // This is the array that will hold our post data.
+            let posts = [];
+
+            /**
+             * Fetches the list of posts from a JSON file.
+             * @returns {Promise<void>}
+             */
+            const fetchPosts = async () => {
+                try {
+                    // Use the URL constructor to ensure the path is correctly formed.
+                    const postsURL = new URL('posts.json', baseURL);
+                    const response = await fetch(postsURL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    posts = await response.json();
+                    renderHomepage();
+                } catch (error) {
+                    console.error('Could not fetch posts:', error);
+                    blogPostsContainer.innerHTML = '<p class="text-red-500">Failed to load blog posts. Please check if `posts.json` exists.</p>';
+                }
+            };
+
+            /**
+             * Renders the list of blog posts on the homepage.
+             */
+            const renderHomepage = () => {
+                blogPostsContainer.classList.remove('hidden');
+                postContentContainer.classList.add('hidden');
+                // Use innerHTML to replace all existing content
+                blogPostsContainer.innerHTML = `
+                    <h2 class="text-xl font-bold p-4 text-white uppercase border-b-2 border-white">Recent Posts</h2>
+                    <ul class="space-y-0">
+                        ${posts.map(post => `
+                            <li class="bg-black p-4 border-b-2 border-white last:border-b-0">
+                                <a href="javascript:void(0);" class="block" data-path="${post.file}">
+                                    <h3 class="text-xl font-bold text-white mb-1">${post.title}</h3>
+                                    <p class="text-sm text-gray-400">${post.date}</p>
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            };
+
+            /**
+             * Fetches and renders a single Markdown post.
+             * @param {string} postPath - The path to the Markdown file.
+             */
+            const fetchAndRenderPost = async (postPath) => {
+                try {
+                    // Use the URL constructor to get the full path to the Markdown file.
+                    const fullPath = new URL(postPath, baseURL);
+                    const response = await fetch(fullPath);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const markdownText = await response.text();
+                    
+                    // Convert Markdown to HTML using the `marked` library.
+                    const htmlContent = marked.parse(markdownText);
+                    
+                    // Display the post content and hide the homepage list.
+                    postContentContainer.innerHTML = `
+                        <div class="bg-black p-6 sm:p-10 border-2 border-white">
+                            <div class="prose max-w-none text-white">
+                                ${htmlContent}
+                            </div>
+                        </div>
+                        <div class="mt-8 text-center">
+                            <button id="back-button" class="px-6 py-2 bg-white text-black font-bold uppercase border-2 border-white hover:bg-black hover:text-white transition-colors duration-300">
+                                &larr; Back to Home
+                            </button>
+                        </div>
+                    `;
+                    
+                    postContentContainer.classList.remove('hidden');
+                    blogPostsContainer.classList.add('hidden');
+                    
+                    // Add event listener to the back button.
+                    document.getElementById('back-button').addEventListener('click', () => {
+                        // Use pushState to navigate back to the base path.
+                        window.history.pushState(null, '', new URL('./', baseURL));
+                        renderHomepage();
+                    });
+
+                    // Update the URL to match the post.
+                    window.history.pushState(null, '', `${new URL(postPath, baseURL).href}?post=${postPath}`);
+                } catch (error) {
+                    console.error(`Could not fetch post from ${postPath}:`, error);
+                    postContentContainer.innerHTML = `<p class="text-red-500">Failed to load this blog post.</p>`;
+                    postContentContainer.classList.remove('hidden');
+                    blogPostsContainer.classList.add('hidden');
+                }
+            };
+
+            // Event delegation to handle clicks on any post link.
+            blogPostsContainer.addEventListener('click', (event) => {
+                // Check if the clicked element is an anchor tag with a data-path attribute.
+                const targetLink = event.target.closest('a[data-path]');
+                if (targetLink) {
+                    event.preventDefault(); // Prevent the default link behavior.
+                    const postPath = targetLink.getAttribute('data-path');
+                    fetchAndRenderPost(postPath);
+                }
+            });
+
+            // Handle browser's back/forward button.
+            window.addEventListener('popstate', () => {
+                const params = new URLSearchParams(window.location.search);
+                const postPath = params.get('post');
+                if (postPath) {
+                    fetchAndRenderPost(postPath);
+                } else {
+                    renderHomepage();
+                }
+            });
+
+            // Initial call to fetch posts when the page loads.
+            fetchPosts();
+
+            // Check URL for a post path on page load.
+            const params = new URLSearchParams(window.location.search);
+            const postPath = params.get('post');
+            if (postPath) {
+                // If a post is specified in the URL, fetch and render it directly.
+                fetchAndRenderPost(postPath);
+            }
+        });
+    </script>
+</body>
+</html>
