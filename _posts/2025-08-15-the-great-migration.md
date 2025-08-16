@@ -1,3 +1,7 @@
+---
+title: "🎬 The Great Migration: A Developer's Journey Through the Evolution of Distributed Communication"
+---
+
 # 🎬 The Great Migration: A Developer's Journey Through the Evolution of Distributed Communication
 
 ---

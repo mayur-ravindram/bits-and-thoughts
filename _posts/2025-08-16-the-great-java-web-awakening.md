@@ -1,6 +1,9 @@
-# 🌋 The Great Java Web Awakening: MM's Odyssey Through Enterprise Evolution
+---
+title: 🌋 The Great Java Web Awakening: MM's Odyssey Through Enterprise Evolution
 
 ---
+
+# 🌋 The Great Java Web Awakening: MM's Odyssey Through Enterprise Evolution
 
 ## 🌅 Prologue: The Oracle of Silicon Valley
 
